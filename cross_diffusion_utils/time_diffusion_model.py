@@ -115,7 +115,11 @@ class DiffusionTimeModel(nn.Module):
         # noise_level = torch.FloatTensor([self.alphas_prod_p_sqrt[t + 1]]).repeat(batch_size, 1).to(self.device)
         noise_level = torch.FloatTensor([t]).repeat(batch_size, 1).to(self.device)
         # Infer noise, conditioned on continuous level
-        eps_recon = model(x.type(torch.cuda.FloatTensor), e, noise_level.type(torch.cuda.FloatTensor), hist, non_padding_mask)
+        eps_recon = model(x.to(self.device, dtype=torch.float),
+                          e,
+                          noise_level.to(self.device, dtype=torch.float),
+                          hist,
+                          non_padding_mask)
         eps_recon = eps_recon.squeeze(-1)
         x_recon = self.predict_start_from_noise(x, t, eps_recon)
         # Output clipping in WaveGrad
@@ -133,8 +137,11 @@ class DiffusionTimeModel(nn.Module):
         noise = torch.zeros_like(cur_x) if i == 0 else torch.randn_like(cur_x)
         sqrt_tilde_beta = torch.sqrt((1-self.alpha_prev_bars[i])/(1-self.alpha_bars[i])*self.betas[i])
         noise_level = torch.FloatTensor([i]).repeat(cur_x.size(0), 1).to(self.device)
-        pred_eps = self.denoise_func_(cur_x.type(torch.cuda.FloatTensor), e, noise_level.type(torch.cuda.FloatTensor), hist, non_padding_mask)
-
+        pred_eps = self.denoise_func_(cur_x.to(self.device, dtype=torch.float),
+                                      e,
+                                      noise_level.to(self.device, dtype=torch.float),
+                                      hist,
+                                      non_padding_mask)
         mu_theta_xt = torch.sqrt(1/self.alphas[i])*(cur_x-self.betas[i]/(torch.sqrt(1-self.alpha_bars[i]))*pred_eps.squeeze(-1))
         x = mu_theta_xt + sqrt_tilde_beta*noise
         return x
@@ -149,8 +156,11 @@ class DiffusionTimeModel(nn.Module):
 
     def _one_diffusion_rev_step_ddim(self, model, cur_x, e, i, hist, non_padding_mask, prev_i):
         noise_level = torch.FloatTensor([i]).repeat(cur_x.size(0), 1).to(self.device)
-        pred_eps = self.denoise_func_(cur_x.type(torch.cuda.FloatTensor), e, noise_level.type(torch.cuda.FloatTensor),
-                                      hist, non_padding_mask).squeeze(-1)
+        pred_eps = self.denoise_func_(cur_x.to(self.device, dtype=torch.float),
+                                      e,
+                                      noise_level.to(self.device, dtype=torch.float),
+                                      hist,
+                                      non_padding_mask).squeeze(-1)
         # pred_x_0 = torch.sqrt(self.alpha_bars[prev_i] * (cur_x - torch.sqrt(1-self.alpha_bars[i]) * pred_eps) / torch.sqrt(self.alpha_bars[i]))
         pred_x_0 = torch.sqrt(self.alpha_bars[prev_i]) * (cur_x - self.one_minus_alphas_bar_sqrt[i] * pred_eps) / torch.sqrt(self.alpha_bars[i])
         direction_point_to_xt = torch.sqrt(1-self.alpha_bars[prev_i])*pred_eps

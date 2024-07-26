@@ -8,9 +8,7 @@ def set_seeds(seed, cuda_deterministic=False):
         random.seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
+
         if torch.backends.mps.is_available():
-            torch.cuda.manual_seed(seed)
-            torch.cuda.manual_seed_all(seed)
-            if cuda_deterministic:
-                torch.backends.cudnn.deterministic = True
-                torch.backends.cudnn.benchmark = False
+            # No hay configuraciones específicas de MPS para determinismo similar a CUDA
+            pass
