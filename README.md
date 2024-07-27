@@ -1,4 +1,4 @@
-# Cross Diffusion 
+# Cross Diffusion for Mac (Pythom 3.9)
 source code for Interacting Diffusion Processes for Event Sequence Forecasting
 
 # Run the Code
